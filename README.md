@@ -6,7 +6,7 @@
 #### 软件架构
 软件架构说明
 
-
+![架构](https://raw.githubusercontent.com/go-nuomi/go-nuomi/master/img_folder/%E6%BC%8F%E6%89%AB%E6%9E%B6%E6%9E%84.jpg)
 
 
 #### 安装教程
