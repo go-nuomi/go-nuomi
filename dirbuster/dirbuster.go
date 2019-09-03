@@ -5,6 +5,7 @@ import (
   "fmt"
   "go-nuomi/lib"
   "go-nuomi/lib/http"
+  "go-nuomi/nuomi"
   "go-nuomi/utils"
 )
 
@@ -12,6 +13,15 @@ type Dirbuster struct {
   options *DirOptions
   libopts *lib.Options
   httpClient    *http.HTTPClient
+}
+
+type ErrWildcard struct {
+  url string
+  statusCode int
+}
+
+func (e *ErrWildcard) Error() string {
+  return fmt.Sprintf("the server returns a status code that matches the provided options for non existing urls. %s => %d", e.url, e.statusCode)
 }
 
 func NewDirbuster(cont context.Context, libOptions *lib.Options,
@@ -46,20 +56,32 @@ func NewDirbuster(cont context.Context, libOptions *lib.Options,
     return &d, nil
 }
 
+
 func runDir()error{
   libOptions, pluginOpts, err := parseDirOptions()
   if err != nil{
     return fmt.Errorf("error on parsing arguments: %v", err)
   }
 
-  plugin, err := NewDirbuster()
+  plugin, err := NewDirbuster(lib.GetmainContext(),
+    libOptions, pluginOpts)
+  if err != nil{
+    return fmt.Errorf("error on creating gobusterdir: %v", err)
+  }
 
+  if err := nuomi.NuoMiRunner(lib.GetmainContext(), libOptions,plugin);err != nil{
+    if goberr, ok := err.(*ErrWildcard);ok{
+      return fmt.Errorf("%s. To force processing of Wildcard responses, specify the '--wildcard' switch", goberr.Error())
+    }
+    return fmt.Errorf("error on running gobuster: %v", err)
+  }
+  return nil
 }
 
 
 // 获取、解析DirOptions
-func parseDirOptions()(*lib.Options, *DirOptions, error){
-  libOptions := GetDirOptions()
+func parseDirOptions()(*lib.Options, *DirOptions,error){
+  libOptions := lib.GetLibOptions()
   if libOptions == nil{
     return nil,nil, fmt.Errorf("invaild libOptions,value=%v",libOptions)
   }
